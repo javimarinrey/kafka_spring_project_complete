@@ -23,9 +23,13 @@ make deploy-producer
 ```
 
 Compila TODOS los microservicios
+
 Reconstruye imágenes solo si hay cambios
+
 No interrumpe Kafka
+
 Levanta cada contenedor con health checks
 
+```sh
 make deploy-all
-
+```
