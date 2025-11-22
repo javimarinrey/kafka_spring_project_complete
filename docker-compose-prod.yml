@@ -1,0 +1,120 @@
+
+version: '3.9'
+services:
+  kafka-1:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_KRAFT_CLUSTER_ID: "cluster-1234"
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka1_data:/bitnami/kafka
+    networks:
+      - kafka-net
+  kafka-2:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_KRAFT_CLUSTER_ID: "cluster-1234"
+      KAFKA_CFG_NODE_ID: 2
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+    volumes:
+      - kafka2_data:/bitnami/kafka
+    networks:
+      - kafka-net
+  kafka-3:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_KRAFT_CLUSTER_ID: "cluster-1234"
+      KAFKA_CFG_NODE_ID: 3
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+    volumes:
+      - kafka3_data:/bitnami/kafka
+    networks:
+      - kafka-net
+
+  eureka:
+    image: myregistry.com/myproject/eureka:latest
+    ports:
+      - "8761:8761"
+    networks:
+      - kafka-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  gateway:
+    image: myregistry.com/myproject/gateway:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka
+    networks:
+      - kafka-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  producer:
+    image: myregistry.com/myproject/producer:latest
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - eureka
+    networks:
+      - kafka-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  consumer:
+    image: myregistry.com/myproject/consumer:latest
+    ports:
+      - "8082:8082"
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - eureka
+    networks:
+      - kafka-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  kafka1_data:
+  kafka2_data:
+  kafka3_data:
+
+networks:
+  kafka-net:
+    driver: bridge
