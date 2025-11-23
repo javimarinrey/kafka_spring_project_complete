@@ -9,10 +9,7 @@ spring:
       retries: 3
       acks: all
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://eureka:8761/eureka/
+
 
 management:
   endpoints:
