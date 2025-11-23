@@ -33,3 +33,6 @@ Levanta cada contenedor con health checks
 ```sh
 make deploy-all
 ```
+
+# Si estuvieras mapeando un directorio local, usa este comando en el host:
+sudo chown -R 1000:1000 ./data/kafka1
